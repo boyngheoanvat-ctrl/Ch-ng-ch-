@@ -20,9 +20,8 @@ jobs:
         uses: actions/checkout@v4
       - name: Validate source and Safari code
         run: |
-          python3 -m py_compile scripts/sync.py scripts/source_catalog.py scripts/finder.py
+          python3 -m py_compile scripts/sync.py
           node --check app.js
-          node --check csr.js
       - name: Download certificate metadata
         run: |
           mkdir -p site data

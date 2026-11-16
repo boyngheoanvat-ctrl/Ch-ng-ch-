@@ -7,8 +7,8 @@
   <meta name="description" content="ERI Cert Check — theo dõi trạng thái chứng chỉ doanh nghiệp miễn phí cho ESign, KSign, Feather trên iPhone.">
   <title>ERI CERT CHECK | ESign Free Certificates</title>
   <link rel="icon" href="./favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="./styles.css?v=4">
-  <script src="./app.js?v=4" defer></script>
+  <link rel="stylesheet" href="./styles.css?v=5">
+  <script src="./app.js?v=5" defer></script>
 </head>
 <body>
   <div class="orb orb-one" aria-hidden="true"></div>
@@ -23,7 +23,7 @@
       <section class="hero">
         <div class="eyebrow"><span class="asterisk">✳</span> CÔNG CỤ TRA CỨU CHỨNG CHỈ IOS</div>
         <h1>Chứng chỉ <em>doanh nghiệp</em><br><span class="gradient-text">còn hiệu lực.</span></h1>
-        <p>Chỉ hiển thị chứng chỉ nguồn đang báo SIGNED, còn thời hạn, có đường dẫn P12 và mobileprovision. Tự ẩn chứng chỉ đã thu hồi, hết hạn, thiếu P12 hoặc không rõ tình trạng.</p>
+        <p>Theo dõi chứng chỉ từ nhiều nguồn công khai. Chỉ hiện bộ có trạng thái SIGNED, còn hạn và đủ thông tin P12 + mobileprovision; các nguồn chưa xác minh được sẽ nằm ở phần tham khảo bên dưới.</p>
         <div class="hero-actions">
           <button type="button" id="refreshBtn" class="primary"><span class="reload-icon">⟳</span> Tải bản cập nhật</button>
           <a href="https://sideloading.net/api/" target="_blank" rel="noopener noreferrer" class="secondary">Xem API nguồn <span aria-hidden="true">↗</span></a>
@@ -41,6 +41,16 @@
         
         <div id="message" class="message" role="status" aria-live="polite">Đang lấy danh sách từ nguồn công khai…</div>
         <div id="certList" class="cert-grid" aria-live="polite"></div>
+      </section>
+      <section class="source-library" aria-labelledby="sourcesTitle">
+        <div class="source-library-heading">
+          <div>
+            <div class="small-title">TỔNG HỢP TỪ NHIỀU NGUỒN</div>
+            <h2 id="sourcesTitle">Nguồn chứng chỉ được theo dõi <span id="sourceCount" class="pill-number">—</span></h2>
+          </div>
+          <div class="source-hint">Nguồn không có API hoặc chỉ cung cấp ZIP sẽ được đánh dấu tham khảo, không tự chuyển thành SIGNED.</div>
+        </div>
+        <div class="source-grid" id="sourceList" aria-live="polite"></div>
       </section>
       <section class="explain"><div class="info-icon">i</div><div><h3>Lưu ý trước khi dùng</h3><p>Website chỉ hiện chứng chỉ được NexSideloading báo SIGNED, có danh mục P12 và thời hạn hợp lệ. <strong>Chưa xác minh trực tiếp với Apple và chưa kiểm tra việc cài hoặc ký IPA thực tế.</strong> Nếu dữ liệu quá cũ, danh sách sẽ tạm ẩn toàn bộ để tránh báo sai. Chứng chỉ có thể bị thu hồi bất cứ lúc nào. Chứng chỉ Enterprise được Apple cấp cho tổ chức để phân phối ứng dụng nội bộ; hãy chỉ sử dụng khi có quyền hợp lệ. Tránh đưa chứng chỉ riêng và mật khẩu cá nhân lên trang không tin cậy.</p></div></section>
     </main>

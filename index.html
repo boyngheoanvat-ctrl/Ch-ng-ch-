@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#080b16">
+  <meta name="description" content="ERI Cert Check — theo dõi trạng thái chứng chỉ doanh nghiệp miễn phí cho ESign, KSign, Feather trên iPhone.">
+  <title>ERI CERT CHECK | ESign Free Certificates</title>
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css">
+  <script src="./app.js" defer></script>
+</head>
+<body>
+  <div class="orb orb-one" aria-hidden="true"></div>
+  <div class="orb orb-two" aria-hidden="true"></div>
+  <div class="shell">
+    <header class="topbar">
+      <a class="brand" href="./" aria-label="ERI Cert Check - trang chủ"><span class="mark">E<span>.</span></span><span class="brand-name">ERI <strong>CERT CHECK</strong><small>ESIGN · ENTERPRISE · FREE</small></span></a>
+      <span class="online"><span class="pulse"></span> CẬP NHẬT 30 PHÚT</span>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="eyebrow"><span class="asterisk">✳</span> CÔNG CỤ TRA CỨU CHỨNG CHỈ IOS</div>
+        <h1>Chứng chỉ <em>doanh nghiệp</em><br>ESign miễn phí <span class="gradient-text">mới nhất.</span></h1>
+        <p>Tra cứu chứng chỉ công khai, lọc tình trạng ký được / đã thu hồi và xem bộ file P12 + mobileprovision khi nguồn có cung cấp.</p>
+        <div class="hero-actions">
+          <button type="button" id="refreshBtn" class="primary"><span class="reload-icon">⟳</span> Tải bản cập nhật</button>
+          <a href="https://sideloading.net/api/" target="_blank" rel="noopener noreferrer" class="secondary">Xem API nguồn <span aria-hidden="true">↗</span></a>
+        </div>
+        <p id="sourceInfo" class="source-line" aria-live="polite">Dữ liệu đồng bộ qua GitHub Actions, khoảng 30 phút/lần.</p>
+      </section>
+
+      <section class="stats" aria-label="Thống kê chứng chỉ">
+        <div class="stat"><div class="stat-top"><span>TỔNG CHỨNG CHỈ</span><span class="stat-symbol">◈</span></div><strong id="totalCount">—</strong><small>Trong danh sách nguồn</small></div>
+        <div class="stat"><div class="stat-top"><span>SIGNED CÓ P12</span><span class="stat-symbol green">●</span></div><strong id="signedCount">—</strong><small>Theo dữ liệu công khai</small></div>
+        <div class="stat"><div class="stat-top"><span>REVOKED / HẾT HẠN</span><span class="stat-symbol red">●</span></div><strong id="revokedCount">—</strong><small>Không nên dùng để ký</small></div>
+        <div class="stat"><div class="stat-top"><span>THIẾU FILE P12</span><span class="stat-symbol yellow">●</span></div><strong id="missingCount">—</strong><small>Không có P12</small></div>
+      </section>
+
+      <section class="results" aria-labelledby="listTitle">
+        <div class="section-head"><div><div class="small-title">THƯ VIỆN CHỨNG CHỈ</div><h2 id="listTitle">Danh sách mới cập nhật <span id="visibleCount" class="pill-number">—</span></h2></div><div id="checkedAt" class="checked-at">Chưa tải dữ liệu</div></div>
+        <div class="toolbar"><div class="search-wrap"><span aria-hidden="true">⌕</span><input id="search" type="search" placeholder="Tìm theo tên doanh nghiệp..." autocomplete="off" aria-label="Tìm chứng chỉ"></div><select id="sort" aria-label="Sắp xếp"><option value="newest">Mới phát hành nhất</option><option value="expires">Hết hạn muộn nhất</option><option value="name">Tên A–Z</option></select></div>
+        <div class="tabs" role="group" aria-label="Lọc tình trạng"><button type="button" class="tab active" data-filter="all">Tất cả</button><button type="button" class="tab" data-filter="signed">Signed</button><button type="button" class="tab" data-filter="revoked">Revoked / hết hạn</button><button type="button" class="tab" data-filter="missing">Thiếu P12</button></div>
+        <div id="message" class="message" role="status" aria-live="polite">Đang lấy danh sách từ nguồn công khai…</div>
+        <div id="certList" class="cert-grid" aria-live="polite"></div>
+      </section>
+      <section class="explain"><div class="info-icon">i</div><div><h3>Lưu ý trước khi dùng</h3><p>Trạng thái được cung cấp bởi NexSideloading, <strong>không phải kết quả kiểm tra trực tiếp với máy chủ Apple</strong>. Chứng chỉ có thể bị thu hồi bất cứ lúc nào. Chứng chỉ Enterprise được Apple cấp cho tổ chức để phân phối ứng dụng nội bộ; hãy chỉ sử dụng khi có quyền hợp lệ. Tránh đưa chứng chỉ riêng và mật khẩu cá nhân lên trang không tin cậy.</p></div></section>
+    </main>
+    <footer><span><b>Mod By Eri Nguyễn</b> · ERI CERT CHECK</span><span>Nguồn: <a href="https://sideloading.net/api/" target="_blank" rel="noopener noreferrer">NexSideloading API</a></span></footer>
+  </div>
+  <template id="certTemplate"><article class="cert"><div class="cert-header"><span class="cert-type">◈ ENTERPRISE</span><span class="status"></span></div><h3 class="cert-name"></h3><div class="dates"><div><span>Ngày cấp</span><strong class="from"></strong></div><div><span>Hạn sử dụng</span><strong class="to"></strong></div></div><div class="cert-footer"><span class="p12-status"></span><div class="links"></div></div></article></template>
+</body>
+</html>

@@ -1,6 +1,6 @@
 'use strict';
 const $ = selector => document.querySelector(selector);
-const state = {items: [], query: '', sort: 'newest', loading: false, summary: null};
+const state = {items: [], query: '', sort: 'newest', loading: false, summary: null, sources: []};
 const MAX_DATA_AGE_MS = 3 * 60 * 60 * 1000;
 const numeric = value => new Intl.NumberFormat('vi-VN').format(value);
 const timestamp = value => value && Number.isFinite(Date.parse(value)) ? Date.parse(value) : 0;
@@ -59,6 +59,57 @@ function card(cert) {
   return element;
 }
 
+function renderSources() {
+  const sources = Array.isArray(state.sources) ? state.sources : [];
+  $('#sourceCount').textContent = numeric(sources.length);
+  const parent = $('#sourceList');
+  const fragment = document.createDocumentFragment();
+  const statuses = {
+    checked: 'Đã đọc dữ liệu',
+    catalog: 'Danh mục tham khảo',
+    archive: 'Kho lưu trữ',
+    manual: 'Cần kiểm tra thủ công',
+    unavailable: 'Tạm không truy cập được'
+  };
+  const hostAllow = new Set([
+    'sideloading.net','nabzclan.vip','github.com','www.signhub.pro',
+    'khoindvn.com','www.applejr.cloud','trial.larp-ipas.com',
+    'cococloud-signing.vip','forum.nezushub.vip','delta.bz'
+  ]);
+  for (const source of sources) {
+    if (!source || typeof source.name !== 'string' || typeof source.url !== 'string') continue;
+    let url;
+    try { url = new URL(source.url); } catch (_) { continue; }
+    if (url.protocol !== 'https:' || !hostAllow.has(url.hostname)) continue;
+    const card = document.createElement('article');
+    card.className = 'source-card';
+    const head = document.createElement('div');
+    head.className = 'source-card-head';
+    const name = document.createElement('strong');
+    name.textContent = source.name;
+    const badge = document.createElement('span');
+    badge.className = 'source-tag ' + (['checked','catalog','archive','manual','unavailable'].includes(source.status)?source.status:'manual');
+    badge.textContent = statuses[source.status] || statuses.manual;
+    head.append(name,badge);
+    const note = document.createElement('p');
+    note.textContent = String(source.note || 'Không có dữ liệu xác minh.').slice(0,400);
+    card.append(head,note);
+    const footer = document.createElement('div');
+    footer.className = 'source-card-footer';
+    const number = document.createElement('span');
+    number.textContent = Number.isInteger(source.count) ?
+      (numeric(source.count) + ' mục đã đọc') : 'Chưa có số lượng xác minh';
+    const link = document.createElement('a');
+    link.href = url.href;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.textContent = 'Xem nguồn ↗';
+    footer.append(number,link);
+    card.append(footer);
+    fragment.append(card);
+  }
+  parent.replaceChildren(fragment);
+}
 function render() {
   const now = Date.now();
   // Recheck dates on every render: a static result must not stay visible after expiry.
@@ -110,15 +161,19 @@ async function reload() {
       throw new Error('Dữ liệu quá cũ hoặc chưa rõ thời gian cập nhật; tạm ẩn tất cả để tránh báo sai.');
     }
     state.summary = payload.summary && typeof payload.summary === 'object' ? payload.summary : null;
+    state.sources = Array.isArray(payload.sources) ? payload.sources : [];
+    renderSources();
     state.items = payload.certificates.filter(cert => isEligible(cert, now));
     $('#checkedAt').textContent = 'Dữ liệu lúc ' +
       new Intl.DateTimeFormat('vi-VN', {dateStyle:'short', timeStyle:'short', timeZone:'Asia/Ho_Chi_Minh'}).format(new Date(fetchedAt)) + ' (GMT+7)';
-    $('#sourceInfo').textContent = 'Nguồn NexSideloading · Lọc SIGNED + P12 + còn hạn · Không kiểm tra trực tiếp với Apple';
+    $('#sourceInfo').textContent = 'Tổng hợp ' + numeric(state.sources.length) + ' nguồn · Chỉ hiển thị SIGNED + đủ P12 + còn hạn · Chưa kiểm tra trực tiếp với Apple';
     state.loading = false;
     render();
   } catch (error) {
     state.items = [];
     state.summary = null;
+    state.sources = [];
+    renderSources();
     $('#checkedAt').textContent = 'Chưa có dữ liệu tin cậy';
     $('#sourceInfo').textContent = 'Không có dữ liệu đủ mới để đánh giá tình trạng chứng chỉ.';
     state.loading = false;

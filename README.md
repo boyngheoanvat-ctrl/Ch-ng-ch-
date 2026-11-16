@@ -43,3 +43,15 @@ Danh sách chỉ dựa trên dữ liệu công khai, **không xác minh trực t
 **Quy tắc bảo vệ:** không lấy một tên gói ZIP hoặc nút cài đặt làm bằng chứng `SIGNED`. Chỉ cho vào danh sách ký IPA khi nguồn có thông tin trạng thái, thời hạn và tài liệu P12/provision liên quan. Chưa xác minh OCSP trực tiếp với Apple; không cam kết cài IPA được.
 
 Nguồn nào ngừng truy cập sẽ hiện `Tạm không truy cập được`; không tự động thay bằng dữ liệu giả. GitHub Actions đồng bộ định kỳ (push mã nguồn và theo lịch 11/41 mỗi giờ), ghi `data/certs.json` vào nhánh `main`; website trên Safari ưu tiên dữ liệu JSON mới từ GitHub Raw và dự phòng JSON của lần triển khai Render gần nhất. Nếu cả hai quá 3 giờ, danh sách sẽ tạm ẩn để tránh báo sai.
+
+## Bộ công cụ tìm hoặc tạo chứng chỉ (Safari)
+
+**Tìm gói ZIP:** `scripts/finder.py` lấy URL ZIP công khai từ SignHub và metadata GitHub Releases của Loyahdev. Kết quả được ghi trong `data/certs.json` trường `packages`; giao diện `#finder` cho phép tìm theo tên và tải ZIP về kiểm tra. Nhãn `CHƯA XÁC MINH` là chính xác: thấy link ZIP không chứng minh gói có P12 hay chưa bị Apple thu hồi. Gói đã được nguồn báo revoked hoặc hết hạn không vào danh sách có thể dùng. Danh sách `SIGNED + P12` giữ nguyên điều kiện nghiêm ngặt.
+
+**Tạo CSR trên iPhone:** `csr.js` tạo ngẫu nhiên cặp khóa RSA 2048-bit với Web Crypto API ngay trên Safari, ký CSR PKCS#10 (SHA256WithRSA) và tải một ZIP gồm `.certSigningRequest`, khóa riêng PKCS#8 `.pem` và README. Website không gửi khóa riêng đi đâu, nhưng khóa riêng bên trong ZIP chưa mã hóa; phải giữ bí mật. Đây chỉ là bước yêu cầu cấp chứng chỉ Apple, **không phải** công cụ tự cấp chứng chỉ doanh nghiệp miễn phí.
+
+Muốn có bộ `cert.p12` + `cert.mobileprovision` thật, cần quyền Apple Developer phù hợp: Apple phê duyệt CSR và cấp `.cer`; khóa riêng tương ứng dùng để xuất `.p12`, Apple cấp provisioning profile cho đúng ứng dụng/thiết bị. Không thể tạo provisioning profile iOS được Apple công nhận chỉ từ trình duyệt hoặc tự ký một chứng chỉ giả.
+
+Tài liệu Apple: https://developer.apple.com/help/account/certificates/create-enterprise-distribution-certificates/ ; https://developer.apple.com/help/account/provisioning-profiles/create-an-ad-hoc-provisioning-profile
+
+Bảo mật: trang tạo CSR không yêu cầu đăng nhập, không tải khóa riêng hoặc mật khẩu lên server ERI. Không dán khóa riêng vào công cụ trên website không đáng tin cậy.

@@ -151,15 +151,30 @@ async function reload() {
   $('#refreshBtn').disabled = true;
   setMessage('Đang kiểm tra dữ liệu chứng chỉ mới nhất đã xuất bản...');
   try {
-    const response = await fetch('./data/certs.json?v=' + Date.now(), {cache: 'no-store'});
-    if (!response.ok) throw new Error('Không có dữ liệu (HTTP ' + response.status + ').');
-    const payload = await response.json();
-    if (!Array.isArray(payload.certificates)) throw new Error('Sai định dạng dữ liệu.');
-    const fetchedAt = timestamp(payload.fetchedAt);
+    // First try periodically committed GitHub data, since Render may not redeploy on every sync.
+    // If GitHub is blocked / behind a firewall / has stale data, fall back to bundled Render data.
+    const endpoints = [
+      'https://raw.githubusercontent.com/boyngheoanvat-ctrl/Ch-ng-ch-/main/data/certs.json',
+      './data/certs.json'
+    ];
+    let payload = null;
+    let lastError = null;
     const now = Date.now();
-    if (!fetchedAt || fetchedAt > now + 10 * 60 * 1000 || now - fetchedAt > MAX_DATA_AGE_MS) {
-      throw new Error('Dữ liệu quá cũ hoặc chưa rõ thời gian cập nhật; tạm ẩn tất cả để tránh báo sai.');
+    for (const endpoint of endpoints) {
+      try {
+        const response = await fetch(endpoint + '?v=' + now, {cache: 'no-store'});
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        const candidate = await response.json();
+        if (!Array.isArray(candidate.certificates)) throw new Error('Sai định dạng dữ liệu.');
+        const at = timestamp(candidate.fetchedAt);
+        if (!at || at > now + 10 * 60 * 1000 || now - at > MAX_DATA_AGE_MS)
+          throw new Error('Dữ liệu quá cũ hoặc chưa rõ thời gian cập nhật.');
+        payload = candidate;
+        break;
+      } catch (error) { lastError = error; }
     }
+    if (!payload) throw lastError || new Error('Chưa lấy được nguồn dữ liệu mới.');
+    const fetchedAt = timestamp(payload.fetchedAt);
     state.summary = payload.summary && typeof payload.summary === 'object' ? payload.summary : null;
     state.sources = Array.isArray(payload.sources) ? payload.sources : [];
     renderSources();

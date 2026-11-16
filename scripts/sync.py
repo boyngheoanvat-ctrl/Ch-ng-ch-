@@ -97,15 +97,10 @@ def main():
     all_data = get_list('all')
     # Fail closed if the missing-P12 list cannot be checked.
     missing_data = get_list('missingP12')
-    missing_ids = set()
     missing_names = set()
     for item in missing_data:
         if not isinstance(item, dict):
             continue
-        try:
-            missing_ids.add(int(item.get('id')))
-        except (ValueError, TypeError):
-            pass
         name = str(item.get('name') or item.get('nickname') or '').strip().casefold()
         if name:
             missing_names.add(name)
@@ -113,7 +108,7 @@ def main():
     candidates = [cert for item in all_data if (cert := normalize(item, now))]
     certs = [
         cert for cert in candidates
-        if cert['id'] not in missing_ids and cert['name'].casefold() not in missing_names
+        if cert['name'].casefold() not in missing_names
     ]
     certs.sort(key=lambda cert: cert['validFrom'], reverse=True)
     payload = {

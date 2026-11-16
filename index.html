@@ -7,8 +7,8 @@
   <meta name="description" content="ERI Cert Check — theo dõi trạng thái chứng chỉ doanh nghiệp miễn phí cho ESign, KSign, Feather trên iPhone.">
   <title>ERI CERT CHECK | ESign Free Certificates</title>
   <link rel="icon" href="./favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="./styles.css">
-  <script src="./app.js" defer></script>
+  <link rel="stylesheet" href="./styles.css?v=3">
+  <script src="./app.js?v=3" defer></script>
 </head>
 <body>
   <div class="orb orb-one" aria-hidden="true"></div>
@@ -16,36 +16,33 @@
   <div class="shell">
     <header class="topbar">
       <a class="brand" href="./" aria-label="ERI Cert Check - trang chủ"><span class="mark">E<span>.</span></span><span class="brand-name">ERI <strong>CERT CHECK</strong><small>ESIGN · ENTERPRISE · FREE</small></span></a>
-      <span class="online"><span class="pulse"></span> CẬP NHẬT 30 PHÚT</span>
+      <span class="online"><span class="pulse"></span> CHỈ HIỆN SIGNED + P12</span>
     </header>
 
     <main>
       <section class="hero">
         <div class="eyebrow"><span class="asterisk">✳</span> CÔNG CỤ TRA CỨU CHỨNG CHỈ IOS</div>
-        <h1>Chứng chỉ <em>doanh nghiệp</em><br>ESign miễn phí <span class="gradient-text">mới nhất.</span></h1>
-        <p>Tra cứu chứng chỉ công khai, xem trạng thái SIGNED/REVOKED và kiểm tra riêng việc nguồn có cung cấp đủ P12 + mobileprovision hay không.</p>
+        <h1>Chứng chỉ <em>doanh nghiệp</em><br><span class="gradient-text">còn hiệu lực.</span></h1>
+        <p>Chỉ hiển thị chứng chỉ nguồn đang báo SIGNED, còn thời hạn, có đường dẫn P12 và mobileprovision. Tự ẩn chứng chỉ đã thu hồi, hết hạn, thiếu P12 hoặc không rõ tình trạng.</p>
         <div class="hero-actions">
           <button type="button" id="refreshBtn" class="primary"><span class="reload-icon">⟳</span> Tải bản cập nhật</button>
           <a href="https://sideloading.net/api/" target="_blank" rel="noopener noreferrer" class="secondary">Xem API nguồn <span aria-hidden="true">↗</span></a>
         </div>
-        <p id="sourceInfo" class="source-line" aria-live="polite">Dữ liệu đồng bộ qua GitHub Actions, khoảng 30 phút/lần.</p>
+        <p id="sourceInfo" class="source-line" aria-live="polite">Chỉ lọc theo trạng thái bên thứ ba. Không xác nhận trực tiếp khả năng ký hoặc cài đặt với Apple.</p>
       </section>
 
-      <section class="stats" aria-label="Thống kê chứng chỉ">
-        <div class="stat"><div class="stat-top"><span>TỔNG CHỨNG CHỈ</span><span class="stat-symbol">◈</span></div><strong id="totalCount">—</strong><small>Trong danh sách nguồn</small></div>
-        <div class="stat"><div class="stat-top"><span>SIGNED CÓ P12</span><span class="stat-symbol green">●</span></div><strong id="signedCount">—</strong><small>Theo dữ liệu công khai</small></div>
-        <div class="stat"><div class="stat-top"><span>REVOKED / HẾT HẠN</span><span class="stat-symbol red">●</span></div><strong id="revokedCount">—</strong><small>Không nên dùng để ký</small></div>
-        <div class="stat"><div class="stat-top"><span>THIẾU FILE P12</span><span class="stat-symbol yellow">●</span></div><strong id="missingCount">—</strong><small>Không có P12</small></div>
+      <section class="stats" aria-label="Chứng chỉ đủ điều kiện theo nguồn">
+        <div class="stat"><div class="stat-top"><span>CHỨNG CHỈ SIGNED + CÓ P12 + CÒN HẠN</span><span class="stat-symbol green">●</span></div><strong id="totalCount">—</strong><small>Đã lọc theo dữ liệu công khai, không bảo đảm Apple chấp nhận</small></div>
       </section>
 
       <section class="results" aria-labelledby="listTitle">
-        <div class="section-head"><div><div class="small-title">THƯ VIỆN CHỨNG CHỈ</div><h2 id="listTitle">Danh sách mới cập nhật <span id="visibleCount" class="pill-number">—</span></h2></div><div id="checkedAt" class="checked-at">Chưa tải dữ liệu</div></div>
+        <div class="section-head"><div><div class="small-title">THƯ VIỆN CHỨNG CHỈ</div><h2 id="listTitle">Danh sách đủ điều kiện theo nguồn <span id="visibleCount" class="pill-number">—</span></h2></div><div id="checkedAt" class="checked-at">Chưa tải dữ liệu</div></div>
         <div class="toolbar"><div class="search-wrap"><span aria-hidden="true">⌕</span><input id="search" type="search" placeholder="Tìm theo tên doanh nghiệp..." autocomplete="off" aria-label="Tìm chứng chỉ"></div><select id="sort" aria-label="Sắp xếp"><option value="newest">Mới phát hành nhất</option><option value="expires">Hết hạn muộn nhất</option><option value="name">Tên A–Z</option></select></div>
-        <div class="tabs" role="group" aria-label="Lọc tình trạng"><button type="button" class="tab active" data-filter="all">Tất cả</button><button type="button" class="tab" data-filter="signed">SIGNED + P12</button><button type="button" class="tab" data-filter="revoked">Revoked / hết hạn</button><button type="button" class="tab" data-filter="missing">Thiếu P12</button></div>
+        
         <div id="message" class="message" role="status" aria-live="polite">Đang lấy danh sách từ nguồn công khai…</div>
         <div id="certList" class="cert-grid" aria-live="polite"></div>
       </section>
-      <section class="explain"><div class="info-icon">i</div><div><h3>Lưu ý trước khi dùng</h3><p>Trạng thái được cung cấp bởi NexSideloading, <strong>không phải kết quả kiểm tra trực tiếp với máy chủ Apple</strong>. Chứng chỉ có thể bị thu hồi bất cứ lúc nào. SIGNED chỉ là trạng thái theo nguồn, không bảo đảm có P12. Nhóm thiếu P12 chỉ cung cấp mobileprovision và không đủ tệp để ký IPA bằng ESign. Chứng chỉ Enterprise được Apple cấp cho tổ chức để phân phối ứng dụng nội bộ; hãy chỉ sử dụng khi có quyền hợp lệ. Tránh đưa chứng chỉ riêng và mật khẩu cá nhân lên trang không tin cậy.</p></div></section>
+      <section class="explain"><div class="info-icon">i</div><div><h3>Lưu ý trước khi dùng</h3><p>Website chỉ hiện chứng chỉ được NexSideloading báo SIGNED, có danh mục P12 và thời hạn hợp lệ. <strong>Chưa xác minh trực tiếp với Apple và chưa kiểm tra việc cài hoặc ký IPA thực tế.</strong> Nếu dữ liệu quá cũ, danh sách sẽ tạm ẩn toàn bộ để tránh báo sai. Chứng chỉ có thể bị thu hồi bất cứ lúc nào. Chứng chỉ Enterprise được Apple cấp cho tổ chức để phân phối ứng dụng nội bộ; hãy chỉ sử dụng khi có quyền hợp lệ. Tránh đưa chứng chỉ riêng và mật khẩu cá nhân lên trang không tin cậy.</p></div></section>
     </main>
     <footer><span><b>Mod By Eri Nguyễn</b> · ERI CERT CHECK</span><span>Nguồn: <a href="https://sideloading.net/api/" target="_blank" rel="noopener noreferrer">NexSideloading API</a></span></footer>
   </div>

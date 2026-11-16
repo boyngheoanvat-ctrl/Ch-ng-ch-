@@ -18,6 +18,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Validate source and Safari code
+        run: |
+          python3 -m py_compile scripts/sync.py scripts/source_catalog.py
+          node --check app.js
       - name: Download certificate metadata
         run: |
           mkdir -p site data

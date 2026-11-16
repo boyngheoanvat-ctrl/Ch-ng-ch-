@@ -28,11 +28,11 @@ function card(cert) {
   el.querySelector('.cert-name').textContent=cert.name || 'Không rõ tên';
   const status=['signed','revoked','expired'].includes(cert.status)?cert.status:'unknown';
   const pill=el.querySelector('.status');
-  pill.className='status '+status;
-  pill.textContent=statusLabels[status];
+  pill.className='status '+(status==='signed' && !cert.hasP12?'missing-p12':status);
+  pill.textContent=status==='signed' && !cert.hasP12?'SIGNED · THIẾU P12':statusLabels[status];
   el.querySelector('.from').textContent=formatDate(cert.validFrom);
   el.querySelector('.to').textContent=formatDate(cert.validTo);
-  el.querySelector('.p12-status').textContent=cert.hasP12?'◉ Có P12 + profile':'◌ Thiếu file P12';
+  el.querySelector('.p12-status').textContent=cert.hasP12?'◉ Nguồn có P12 + profile':'⚠ Thiếu P12 — chưa ký IPA được';
   const links=el.querySelector('.links');
   const urls=cert.links || {};
   const defs=cert.hasP12?[['↓ Tải ZIP',urls.zip,true],['P12',urls.p12,false],['Profile',urls.profile,false],['Mật khẩu',urls.password,false]]:[['↓ Profile',urls.profile,true]];
@@ -79,7 +79,7 @@ async function reload() {
     state.items=payload.certificates.filter(x=>x && typeof x.name==='string' && typeof x.id==='number');
     const checked=timestamp(payload.fetchedAt);
     $('#checkedAt').textContent=checked?'Dữ liệu đồng bộ: '+new Intl.DateTimeFormat('vi-VN',{dateStyle:'short',timeStyle:'short',timeZone:'Asia/Ho_Chi_Minh'}).format(new Date(checked))+' (GMT+7)':'Chưa xác định thời gian đồng bộ';
-    $('#sourceInfo').textContent='Nguồn: NexSideloading · GitHub Actions tự đồng bộ khoảng 30 phút/lần · Không xác minh trực tiếp với Apple';
+    $('#sourceInfo').textContent='Nguồn: NexSideloading · Đồng bộ khi Render triển khai, lịch cập nhật khoảng 30 phút/lần · SIGNED không đồng nghĩa có P12';
     updateStats();
     setMessage(Array.isArray(payload.warnings)&&payload.warnings.length?payload.warnings.join(' '):'');
   } catch(error) {

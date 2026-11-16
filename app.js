@@ -1,6 +1,6 @@
 'use strict';
 const $ = selector => document.querySelector(selector);
-const state = {items: [], query: '', sort: 'newest', loading: false};
+const state = {items: [], query: '', sort: 'newest', loading: false, summary: null};
 const MAX_DATA_AGE_MS = 3 * 60 * 60 * 1000;
 const numeric = value => new Intl.NumberFormat('vi-VN').format(value);
 const timestamp = value => value && Number.isFinite(Date.parse(value)) ? Date.parse(value) : 0;
@@ -77,7 +77,18 @@ function render() {
   items.forEach(item => fragment.append(card(item)));
   $('#certList').replaceChildren(fragment);
   if (!state.loading) {
-    if (!state.items.length) setMessage('Hiện chưa có chứng chỉ nào đủ điều kiện theo dữ liệu cập nhật gần nhất. Không hiển thị chứng chỉ thiếu P12 hoặc chưa xác định được tình trạng.');
+    if (!state.items.length) {
+      const info = state.summary;
+      if (info && Number.isInteger(info.withP12Checked) && Number.isInteger(info.signedMissingP12)) {
+        const revoked = Number.isInteger(info.withP12RevokedOrExpired) ? info.withP12RevokedOrExpired : 0;
+        setMessage('Hiện không có chứng chỉ đủ điều kiện để ký IPA theo nguồn. Đã kiểm tra ' +
+          numeric(info.withP12Checked) + ' bộ có P12 (' + numeric(revoked) +
+          ' bị báo thu hồi hoặc hết hạn). Có ' + numeric(info.signedMissingP12) +
+          ' chứng chỉ vẫn SIGNED nhưng thiếu P12 — không đủ file để ký bằng ESign. Website sẽ tự cập nhật khi nguồn có chứng chỉ phù hợp.');
+      } else {
+        setMessage('Hiện chưa có chứng chỉ nào đủ điều kiện: SIGNED, có P12 và còn hạn sử dụng.');
+      }
+    }
     else if (!items.length) setMessage('Không tìm thấy chứng chỉ theo tên đã nhập.');
     else setMessage('');
   }
@@ -98,6 +109,7 @@ async function reload() {
     if (!fetchedAt || fetchedAt > now + 10 * 60 * 1000 || now - fetchedAt > MAX_DATA_AGE_MS) {
       throw new Error('Dữ liệu quá cũ hoặc chưa rõ thời gian cập nhật; tạm ẩn tất cả để tránh báo sai.');
     }
+    state.summary = payload.summary && typeof payload.summary === 'object' ? payload.summary : null;
     state.items = payload.certificates.filter(cert => isEligible(cert, now));
     $('#checkedAt').textContent = 'Dữ liệu lúc ' +
       new Intl.DateTimeFormat('vi-VN', {dateStyle:'short', timeStyle:'short', timeZone:'Asia/Ho_Chi_Minh'}).format(new Date(fetchedAt)) + ' (GMT+7)';
@@ -106,6 +118,7 @@ async function reload() {
     render();
   } catch (error) {
     state.items = [];
+    state.summary = null;
     $('#checkedAt').textContent = 'Chưa có dữ liệu tin cậy';
     $('#sourceInfo').textContent = 'Không có dữ liệu đủ mới để đánh giá tình trạng chứng chỉ.';
     state.loading = false;

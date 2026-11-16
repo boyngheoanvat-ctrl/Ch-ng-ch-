@@ -9,6 +9,7 @@ from email.utils import parsedate_to_datetime
 from pathlib import Path
 from urllib.request import Request, urlopen
 from source_catalog import collect_sources
+from finder import discover_packages
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / 'site' / 'data' / 'certs.json'
@@ -133,6 +134,7 @@ def main():
         )
     )
     additional_sources = collect_sources()
+    downloadable_packages = discover_packages(now)
     sources = [{
         'name': 'NexSideloading',
         'url': 'https://sideloading.net/certificates/',
@@ -156,6 +158,7 @@ def main():
             'eligible': len(certs)
         },
         'sources': sources,
+        'packages': downloadable_packages,
         'certificates': certs
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)

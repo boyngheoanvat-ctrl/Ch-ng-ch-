@@ -22,11 +22,12 @@ DEFINITIONS = [
     ('SignHub', 'https://www.signhub.pro/', 'packages'),
     ('Eojoo', 'https://github.com/eojoo/free-ios-certificates', 'archive'),
     ('Khoindvn', 'https://khoindvn.com/', 'catalog'),
-    ('AppleJR', 'https://www.applejr.cloud/', 'catalog'),
+    ('AppleJR', 'https://applejr.net/', 'catalog'),
     ('LARP IPAs', 'https://trial.larp-ipas.com/', 'public_status'),
     ('CocoCloud', 'https://cococloud-signing.vip/', 'catalog'),
     ('NezusHub', 'https://forum.nezushub.vip/forums/public-certificates.7/', 'manual'),
     ('Delta Executor', 'https://delta.bz/', 'manual'),
+    ('AppleP12 Telegram', 'https://t.me/s/AppleP12', 'manual'),
 ]
 
 

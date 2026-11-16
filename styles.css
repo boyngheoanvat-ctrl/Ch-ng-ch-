@@ -25,3 +25,38 @@
 .source-card-footer a{color:#b8b4ff;font-weight:800;white-space:nowrap}
 @media(max-width:960px){.source-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:700px){.source-library-heading{display:block}.source-hint{margin-top:12px}.source-grid{grid-template-columns:1fr}.source-library-heading h2{font-size:21px}}
+
+/* ERI Certificate Finder */
+.finder{scroll-margin-top:22px;margin:14px 0 50px;padding:25px;border:1px solid #393756;background:linear-gradient(145deg,#16172d,#131b2c);border-radius:20px}
+.finder h2,.csr-tool h2{font-size:clamp(23px,3vw,31px);letter-spacing:-.55px;margin:11px 0 12px}
+.finder-description{font-size:13px;color:#aebbd3;max-width:800px;line-height:1.75}
+.finder-description strong{color:#e7c985}
+.finder-search{margin:22px 0}
+.package-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+.package-card{border:1px solid #343953;background:#171f32;padding:19px;border-radius:14px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.package-heading{display:flex;align-items:flex-start;flex-wrap:wrap;gap:10px;justify-content:space-between}
+.package-heading strong{overflow-wrap:anywhere;font-size:15px;line-height:1.4;max-width:100%}
+.package-card p{margin:0;font-size:11px;line-height:1.7;color:#a7b2cb}
+.package-source{color:#878bf8!important;font-weight:700}
+.package-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:auto;padding-top:5px}
+.finder-empty{border:1px dashed #40465e;border-radius:13px;padding:20px;color:#adb8d0;line-height:1.65;font-size:12px}
+.finder-empty[hidden]{display:none}
+.finder-note{font-size:11px;color:#9a9dbd;line-height:1.7;margin:17px 0 0}
+.csr-tool{scroll-margin-top:18px;margin:15px 0 55px;border:1px solid #334159;border-radius:18px;padding:26px;background:linear-gradient(135deg,#161f30,#111b2c)}
+.csr-tool>p{font-size:13px;line-height:1.8;color:#a4b1ca;margin:10px 0 0}
+.csr-tool>p strong{color:#d8e2f5}
+.csr-tool code{background:#222d45;border-radius:5px;padding:1px 4px;overflow-wrap:anywhere}
+.csr-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px;margin:20px 0}
+.csr-fields label{display:flex;flex-direction:column;gap:9px;font-size:11px;font-weight:800;color:#aebad0}
+.csr-fields input{width:100%;height:50px;background:#0f192b;color:#f0f3fc;border:1px solid #414c62;padding:0 14px;border-radius:11px}
+.csr-ack{display:flex;align-items:flex-start;gap:10px;font-size:12px;line-height:1.6;color:#e4cfa5;max-width:800px}
+.csr-ack input{accent-color:#7b78e9;flex-shrink:0;width:19px;height:19px;margin:2px 0 0}
+.csr-actions{display:flex;gap:12px;flex-wrap:wrap;margin:20px 0 0}
+.csr-status{min-height:22px;margin-top:12px;font-size:12px;color:#afe7c9;line-height:1.6}
+.csr-clarify{border-top:1px solid #35425a;margin-top:20px!important;padding-top:17px;font-size:12px!important}
+@media(max-width:720px){
+.finder,.csr-tool{padding:18px;margin-bottom:33px}
+.package-grid,.csr-fields{grid-template-columns:1fr}
+.package-actions{gap:7px}
+.csr-actions .primary,.csr-actions .secondary{width:100%;justify-content:center}
+}

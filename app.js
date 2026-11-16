@@ -1,103 +1,124 @@
 'use strict';
 const $ = selector => document.querySelector(selector);
-const state = {items: [], filter: 'all', query: '', sort: 'newest', loading: false};
-const statusLabels = {signed:'SIGNED', revoked:'REVOKED', expired:'HẾT HẠN', unknown:'CHƯA RÕ'};
+const state = {items: [], query: '', sort: 'newest', loading: false};
+const MAX_DATA_AGE_MS = 3 * 60 * 60 * 1000;
 const numeric = value => new Intl.NumberFormat('vi-VN').format(value);
-const timestamp = value => Number.isFinite(Date.parse(value)) ? Date.parse(value) : 0;
-const formatDate = value => timestamp(value) ? new Intl.DateTimeFormat('vi-VN', {dateStyle:'medium', timeZone:'Asia/Ho_Chi_Minh'}).format(new Date(value)) : 'Chưa rõ';
+const timestamp = value => value && Number.isFinite(Date.parse(value)) ? Date.parse(value) : 0;
+const formatDate = value => timestamp(value) ? new Intl.DateTimeFormat('vi-VN', {dateStyle:'medium', timeZone:'Asia/Ho_Chi_Minh'}).format(new Date(value)) : 'Không rõ';
 
-function setMessage(text, isError=false) {
-  const box=$('#message');
-  box.textContent=text;
-  box.hidden=!text;
-  box.classList.toggle('error',isError);
+function isEligible(cert, now = Date.now()) {
+  if (!cert || cert.status !== 'signed' || cert.hasP12 !== true) return false;
+  if (typeof cert.name !== 'string' || typeof cert.id !== 'number') return false;
+  const start = timestamp(cert.validFrom);
+  const end = timestamp(cert.validTo);
+  if (!start || !end || start > now || end <= now) return false;
+  const links = cert.links || {};
+  const base = /^https:\/\/sideloading\.net\/api\/certificates\/download\//;
+  return typeof links.p12 === 'string' && base.test(links.p12)
+      && typeof links.profile === 'string' && base.test(links.profile);
 }
-function makeLink(label,url,isPrimary=false) {
-  const a=document.createElement('a');
-  a.className='dl-link'+(isPrimary?' primary-link':'');
-  a.textContent=label;
-  // Only link to public NexSideloading certificate download endpoints.
-  if (!/^https:\/\/sideloading\.net\/api\/certificates\/download\//.test(url)) return null;
-  a.href=url;
-  a.target='_blank';
-  a.rel='noopener noreferrer';
-  return a;
+
+function setMessage(message, isError = false) {
+  const element = $('#message');
+  element.textContent = message;
+  element.hidden = !message;
+  element.classList.toggle('error', isError);
 }
+
+function makeLink(label, url, primary = false) {
+  if (typeof url !== 'string' || !/^https:\/\/sideloading\.net\/api\/certificates\/download\//.test(url)) return null;
+  const anchor = document.createElement('a');
+  anchor.className = 'dl-link' + (primary ? ' primary-link' : '');
+  anchor.textContent = label;
+  anchor.href = url;
+  anchor.target = '_blank';
+  anchor.rel = 'noopener noreferrer';
+  return anchor;
+}
+
 function card(cert) {
-  const el=$('#certTemplate').content.firstElementChild.cloneNode(true);
-  el.querySelector('.cert-name').textContent=cert.name || 'Không rõ tên';
-  const status=['signed','revoked','expired'].includes(cert.status)?cert.status:'unknown';
-  const pill=el.querySelector('.status');
-  pill.className='status '+(status==='signed' && !cert.hasP12?'missing-p12':status);
-  pill.textContent=status==='signed' && !cert.hasP12?'SIGNED · THIẾU P12':statusLabels[status];
-  el.querySelector('.from').textContent=formatDate(cert.validFrom);
-  el.querySelector('.to').textContent=formatDate(cert.validTo);
-  el.querySelector('.p12-status').textContent=cert.hasP12?'◉ Nguồn có P12 + profile':'⚠ Thiếu P12 — chưa ký IPA được';
-  const links=el.querySelector('.links');
-  const urls=cert.links || {};
-  const defs=cert.hasP12?[['↓ Tải ZIP',urls.zip,true],['P12',urls.p12,false],['Profile',urls.profile,false],['Mật khẩu',urls.password,false]]:[['↓ Profile',urls.profile,true]];
-  defs.forEach(([name,url,primary])=>{if(typeof url==='string'){const a=makeLink(name,url,primary);if(a)links.append(a);}});
-  return el;
+  const element = $('#certTemplate').content.firstElementChild.cloneNode(true);
+  element.querySelector('.cert-name').textContent = cert.name;
+  const pill = element.querySelector('.status');
+  pill.className = 'status signed';
+  pill.textContent = 'SIGNED · CÓ P12';
+  element.querySelector('.from').textContent = formatDate(cert.validFrom);
+  element.querySelector('.to').textContent = formatDate(cert.validTo);
+  element.querySelector('.p12-status').textContent = '◉ Nguồn báo có bộ P12 + profile';
+  const urls = cert.links || {};
+  const definitions = [
+    ['↓ Tải ZIP', urls.zip, true],
+    ['P12', urls.p12, false],
+    ['Profile', urls.profile, false],
+    ['Mật khẩu', urls.password, false]
+  ];
+  definitions.forEach(([name, url, primary]) => {
+    const link = makeLink(name, url, primary);
+    if (link) element.querySelector('.links').append(link);
+  });
+  return element;
 }
+
 function render() {
-  const query=state.query.trim().toLocaleLowerCase('vi');
-  const items=state.items.filter(item=>{
-    if(state.filter==='signed' && (item.status!=='signed'||!item.hasP12))return false;
-    if(state.filter==='revoked' && !['revoked','expired'].includes(item.status))return false;
-    if(state.filter==='missing' && item.hasP12)return false;
-    return !query || (String(item.name||'')+' '+String(item.nickname||'')).toLocaleLowerCase('vi').includes(query);
+  const now = Date.now();
+  // Recheck dates on every render: a static result must not stay visible after expiry.
+  state.items = state.items.filter(cert => isEligible(cert, now));
+  const query = state.query.trim().toLocaleLowerCase('vi');
+  const items = state.items.filter(item => !query ||
+      (item.name + ' ' + (item.nickname || '')).toLocaleLowerCase('vi').includes(query));
+  items.sort((a, b) => {
+    if (state.sort === 'name') return a.name.localeCompare(b.name, 'vi');
+    if (state.sort === 'expires') return timestamp(b.validTo) - timestamp(a.validTo);
+    return timestamp(b.validFrom) - timestamp(a.validFrom);
   });
-  items.sort((a,b)=>{
-    if(state.sort==='name')return a.name.localeCompare(b.name,'vi');
-    if(state.sort==='expires')return timestamp(b.validTo)-timestamp(a.validTo);
-    return timestamp(b.validFrom)-timestamp(a.validFrom);
-  });
-  $('#visibleCount').textContent=numeric(items.length);
-  const fragment=document.createDocumentFragment();
-  items.forEach(item=>fragment.append(card(item)));
+  $('#visibleCount').textContent = numeric(items.length);
+  $('#totalCount').textContent = numeric(state.items.length);
+  const fragment = document.createDocumentFragment();
+  items.forEach(item => fragment.append(card(item)));
   $('#certList').replaceChildren(fragment);
-  if(!items.length && state.items.length && !state.loading)setMessage('Không tìm thấy chứng chỉ phù hợp với bộ lọc.');
-  else if(items.length && !state.loading && !$('#message').classList.contains('error'))setMessage('');
-}
-function updateStats() {
-  const all=state.items;
-  $('#totalCount').textContent=numeric(all.length);
-  $('#signedCount').textContent=numeric(all.filter(x=>x.status==='signed' && x.hasP12).length);
-  $('#revokedCount').textContent=numeric(all.filter(x=>x.status==='revoked'||x.status==='expired').length);
-  $('#missingCount').textContent=numeric(all.filter(x=>!x.hasP12).length);
-}
-async function reload() {
-  if(state.loading)return;
-  state.loading=true;
-  $('#refreshBtn').disabled=true;
-  setMessage('Đang lấy danh sách chứng chỉ từ bản cập nhật gần nhất...');
-  try {
-    const response=await fetch('./data/certs.json?v='+Date.now(),{cache:'no-store'});
-    if(!response.ok)throw new Error('Chưa có dữ liệu đồng bộ (HTTP '+response.status+').');
-    const payload=await response.json();
-    if(!Array.isArray(payload.certificates))throw new Error('Dữ liệu không đúng định dạng.');
-    state.items=payload.certificates.filter(x=>x && typeof x.name==='string' && typeof x.id==='number');
-    const checked=timestamp(payload.fetchedAt);
-    $('#checkedAt').textContent=checked?'Dữ liệu đồng bộ: '+new Intl.DateTimeFormat('vi-VN',{dateStyle:'short',timeStyle:'short',timeZone:'Asia/Ho_Chi_Minh'}).format(new Date(checked))+' (GMT+7)':'Chưa xác định thời gian đồng bộ';
-    $('#sourceInfo').textContent='Nguồn: NexSideloading · Đồng bộ khi Render triển khai, lịch cập nhật khoảng 30 phút/lần · SIGNED không đồng nghĩa có P12';
-    updateStats();
-    setMessage(Array.isArray(payload.warnings)&&payload.warnings.length?payload.warnings.join(' '):'');
-  } catch(error) {
-    $('#sourceInfo').textContent='Chưa xác nhận được trạng thái mới nhất từ nguồn.';
-    setMessage('Không tải được danh sách: '+error.message+' Hãy kiểm tra mục Actions trên GitHub hoặc thử lại sau.',true);
-  } finally {
-    state.loading=false;
-    $('#refreshBtn').disabled=false;
-    if(state.items.length)render();
+  if (!state.loading) {
+    if (!state.items.length) setMessage('Hiện chưa có chứng chỉ nào đủ điều kiện theo dữ liệu cập nhật gần nhất. Không hiển thị chứng chỉ thiếu P12 hoặc chưa xác định được tình trạng.');
+    else if (!items.length) setMessage('Không tìm thấy chứng chỉ theo tên đã nhập.');
+    else setMessage('');
   }
 }
-$('#refreshBtn').addEventListener('click',reload);
-$('#search').addEventListener('input',event=>{state.query=event.target.value;render();});
-$('#sort').addEventListener('change',event=>{state.sort=event.target.value;render();});
-document.querySelectorAll('.tab').forEach(tab=>tab.addEventListener('click',()=>{
-  state.filter=tab.dataset.filter;
-  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x===tab));
-  render();
-}));
+
+async function reload() {
+  if (state.loading) return;
+  state.loading = true;
+  $('#refreshBtn').disabled = true;
+  setMessage('Đang kiểm tra dữ liệu chứng chỉ mới nhất đã xuất bản...');
+  try {
+    const response = await fetch('./data/certs.json?v=' + Date.now(), {cache: 'no-store'});
+    if (!response.ok) throw new Error('Không có dữ liệu (HTTP ' + response.status + ').');
+    const payload = await response.json();
+    if (!Array.isArray(payload.certificates)) throw new Error('Sai định dạng dữ liệu.');
+    const fetchedAt = timestamp(payload.fetchedAt);
+    const now = Date.now();
+    if (!fetchedAt || fetchedAt > now + 10 * 60 * 1000 || now - fetchedAt > MAX_DATA_AGE_MS) {
+      throw new Error('Dữ liệu quá cũ hoặc chưa rõ thời gian cập nhật; tạm ẩn tất cả để tránh báo sai.');
+    }
+    state.items = payload.certificates.filter(cert => isEligible(cert, now));
+    $('#checkedAt').textContent = 'Dữ liệu lúc ' +
+      new Intl.DateTimeFormat('vi-VN', {dateStyle:'short', timeStyle:'short', timeZone:'Asia/Ho_Chi_Minh'}).format(new Date(fetchedAt)) + ' (GMT+7)';
+    $('#sourceInfo').textContent = 'Nguồn NexSideloading · Lọc SIGNED + P12 + còn hạn · Không kiểm tra trực tiếp với Apple';
+    state.loading = false;
+    render();
+  } catch (error) {
+    state.items = [];
+    $('#checkedAt').textContent = 'Chưa có dữ liệu tin cậy';
+    $('#sourceInfo').textContent = 'Không có dữ liệu đủ mới để đánh giá tình trạng chứng chỉ.';
+    state.loading = false;
+    render();
+    setMessage('Chưa thể hiển thị chứng chỉ: ' + error.message, true);
+  } finally {
+    $('#refreshBtn').disabled = false;
+  }
+}
+
+$('#refreshBtn').addEventListener('click', reload);
+$('#search').addEventListener('input', event => { state.query = event.target.value; render(); });
+$('#sort').addEventListener('change', event => { state.sort = event.target.value; render(); });
 reload();
-setInterval(()=>{if(!document.hidden)reload();},5*60*1000);
+setInterval(() => { if (!document.hidden) reload(); }, 5 * 60 * 1000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) reload(); });

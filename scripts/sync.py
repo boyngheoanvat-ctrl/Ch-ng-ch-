@@ -111,12 +111,38 @@ def main():
         if cert['name'].casefold() not in missing_names
     ]
     certs.sort(key=lambda cert: cert['validFrom'], reverse=True)
+    def is_signed(item):
+        if not isinstance(item, dict):
+            return False
+        status = str(item.get('status') or '').strip()
+        return bool(re.search(r'\b(signed|active)\b|✅', status, re.I)) and not bool(
+            re.search(r'revoked|expired|❌', status, re.I)
+        )
+
+    signed_missing_p12 = sum(
+        1 for item in missing_data
+        if is_signed(item) and (end := as_datetime(item.get('valid_to', item.get('validTo'))))
+        and end > now
+    )
+    unavailable_with_p12 = sum(
+        1 for item in all_data
+        if isinstance(item, dict) and (
+            re.search(r'revoked|expired|❌', str(item.get('status') or ''), re.I)
+            or (end := as_datetime(item.get('valid_to', item.get('validTo')))) is not None and end <= now
+        )
+    )
     payload = {
         'source': 'NexSideloading NexCerts',
         'sourceUrl': 'https://sideloading.net/api/',
         'fetchedAt': now.isoformat().replace('+00:00', 'Z'),
         'sourceUpdateNote': 'Dữ liệu nguồn công khai được đồng bộ định kỳ',
         'verificationNote': 'Chỉ lọc SIGNED, còn hạn và có danh mục P12 theo bên thứ ba; không xác minh trực tiếp với Apple hoặc kiểm thử cài IPA.',
+        'summary': {
+            'withP12Checked': len(all_data),
+            'withP12RevokedOrExpired': unavailable_with_p12,
+            'signedMissingP12': signed_missing_p12,
+            'eligible': len(certs)
+        },
         'certificates': certs
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)

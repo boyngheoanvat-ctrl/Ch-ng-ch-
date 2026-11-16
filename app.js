@@ -73,8 +73,8 @@ function renderSources() {
   };
   const hostAllow = new Set([
     'sideloading.net','nabzclan.vip','github.com','www.signhub.pro',
-    'khoindvn.com','www.applejr.cloud','trial.larp-ipas.com',
-    'cococloud-signing.vip','forum.nezushub.vip','delta.bz'
+    'khoindvn.com','applejr.net','trial.larp-ipas.com',
+    'cococloud-signing.vip','forum.nezushub.vip','delta.bz','t.me'
   ]);
   for (const source of sources) {
     if (!source || typeof source.name !== 'string' || typeof source.url !== 'string') continue;

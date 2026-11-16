@@ -1,5 +1,9 @@
 name: ERI Cert Check · Update Render data
 on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'data/certs.json'
   schedule:
     - cron: '11,41 * * * *'
   workflow_dispatch:

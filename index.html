@@ -3,87 +3,59 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#080b16">
-  <meta name="description" content="ERI Cert Check — theo dõi trạng thái chứng chỉ doanh nghiệp miễn phí cho ESign, KSign, Feather trên iPhone.">
-  <title>ERI CERT CHECK | ESign Free Certificates</title>
+  <meta name="theme-color" content="#0b1020">
+  <meta name="description" content="ERI CERT CHECK – chỉ hai danh sách chứng chỉ ESign: Signed và Revoked, có nút tải ZIP từ nguồn công khai.">
+  <title>ERI CERT CHECK – Chứng chỉ ESign</title>
   <link rel="icon" href="./favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="./styles.css?v=7">
-  <script src="./app.js?v=8" defer></script>
-  
+  <link rel="stylesheet" href="./styles.css?v=12">
+  <script defer src="./app.js?v=12"></script>
 </head>
 <body>
-  <div class="orb orb-one" aria-hidden="true"></div>
-  <div class="orb orb-two" aria-hidden="true"></div>
-  <div class="shell">
-    <header class="topbar">
-      <a class="brand" href="./" aria-label="ERI Cert Check - trang chủ"><span class="mark">E<span>.</span></span><span class="brand-name">ERI <strong>CERT CHECK</strong><small>ESIGN · ENTERPRISE · FREE</small></span></a>
-      <span class="online"><span class="pulse"></span> CHỈ HIỆN SIGNED + P12</span>
+  <div class="site">
+    <header class="header">
+      <div class="logo" aria-hidden="true">E.</div>
+      <div class="brand">
+        <strong>ERI CERT CHECK</strong>
+        <span>ESign • Chứng chỉ miễn phí</span>
+      </div>
     </header>
 
     <main>
-      <section class="hero">
-        <div class="eyebrow"><span class="asterisk">✳</span> CÔNG CỤ TRA CỨU CHỨNG CHỈ IOS</div>
-        <h1>Công cụ <em>tìm chứng chỉ</em><br><span class="gradient-text">ESign cho iPhone.</span></h1>
-        <p>Tìm các gói chứng chỉ công khai để tải về, đối chiếu trạng thái SIGNED và bộ P12 + mobileprovision. Có thể tạo CSR mới ngay trên iPhone; chứng chỉ hợp lệ vẫn phải do Apple cấp.</p>
-        <div class="hero-actions">
-          <a href="#finder" class="primary">⌕ Tìm gói chứng chỉ</a>
-          <a href="#csr" class="secondary">＋ Tạo CSR mới</a>
-          <button type="button" id="refreshBtn" class="secondary"><span class="reload-icon">⟳</span> Làm mới dữ liệu</button>
-          <a href="https://sideloading.net/api/" target="_blank" rel="noopener noreferrer" class="secondary">Xem API nguồn <span aria-hidden="true">↗</span></a>
-        </div>
-        <p id="sourceInfo" class="source-line" aria-live="polite">Chỉ lọc theo trạng thái bên thứ ba. Không xác nhận trực tiếp khả năng ký hoặc cài đặt với Apple.</p>
-      </section>
+      <div class="heading">
+        <p class="eyebrow">DANH SÁCH CHỨNG CHỈ IOS</p>
+        <h1>Tải ZIP chứng chỉ ESign</h1>
+        <p class="subtitle">Chỉ hiển thị bộ có P12 theo nguồn, tách riêng chứng chỉ còn hiệu lực và chứng chỉ đã bị thu hồi hoặc hết hạn.</p>
+      </div>
 
-      <section class="finder" id="finder" aria-labelledby="finderTitle">
-        <div class="small-title">CÔNG CỤ TÌM CERT.P12 + CERT.MOBILEPROVISION</div>
-        <h2 id="finderTitle">Tìm gói chứng chỉ <span id="packageCount" class="pill-number">—</span></h2>
-        <p class="finder-description">Tìm trong các gói ZIP được nguồn công khai liệt kê. Nhãn <strong>Chưa xác minh</strong> nghĩa là chưa xác nhận được cả nội dung ZIP lẫn trạng thái với Apple. Chỉ số ở đây không phải số chứng chỉ dùng được.</p>
-        <div class="search-wrap finder-search"><span aria-hidden="true">⌕</span><input id="packageSearch" type="search" placeholder="Tên doanh nghiệp, ví dụ Vietnam Airlines..." autocomplete="off" aria-label="Tìm bộ ZIP chứng chỉ"></div>
-        <div id="packageList" class="package-grid" aria-live="polite"></div>
-        <div id="packageEmpty" class="finder-empty">Đang tìm gói chứng chỉ từ các nguồn...</div>
-        <p class="finder-note">Không tìm thấy bộ hợp lệ không có nghĩa là có thể tạo chứng chỉ doanh nghiệp Apple miễn phí. Những gói chưa kiểm tra không được đưa vào danh sách “SIGNED + P12”.</p>
-      </section>
-      <section class="stats" aria-label="Chứng chỉ đủ điều kiện theo nguồn">
-        <div class="stat"><div class="stat-top"><span>CHỨNG CHỈ SIGNED + CÓ P12 + CÒN HẠN</span><span class="stat-symbol green">●</span></div><strong id="totalCount">—</strong><small>Đã lọc theo dữ liệu công khai, không bảo đảm Apple chấp nhận</small></div>
-      </section>
+      <nav class="tabs" aria-label="Trạng thái chứng chỉ">
+        <button class="tab active" id="tabSigned" type="button" aria-pressed="true">
+          <span class="tab-label"><span class="dot green"></span> Còn dùng được</span>
+          <span class="counter" id="signedCount">—</span>
+        </button>
+        <button class="tab" id="tabRevoked" type="button" aria-pressed="false">
+          <span class="tab-label"><span class="dot red"></span> Đã thu hồi</span>
+          <span class="counter" id="revokedCount">—</span>
+        </button>
+      </nav>
 
-      <section class="results" aria-labelledby="listTitle">
-        <div class="section-head"><div><div class="small-title">THƯ VIỆN CHỨNG CHỈ</div><h2 id="listTitle">Danh sách đủ điều kiện theo nguồn <span id="visibleCount" class="pill-number">—</span></h2></div><div id="checkedAt" class="checked-at">Chưa tải dữ liệu</div></div>
-        <div class="toolbar"><div class="search-wrap"><span aria-hidden="true">⌕</span><input id="search" type="search" placeholder="Tìm theo tên doanh nghiệp..." autocomplete="off" aria-label="Tìm chứng chỉ"></div><select id="sort" aria-label="Sắp xếp"><option value="newest">Mới phát hành nhất</option><option value="expires">Hết hạn muộn nhất</option><option value="name">Tên A–Z</option></select></div>
-        
-        <div id="message" class="message" role="status" aria-live="polite">Đang lấy danh sách từ nguồn công khai…</div>
-        <div id="certList" class="cert-grid" aria-live="polite"></div>
-      </section>
-      <section id="csr" class="csr-tool" aria-labelledby="csrTitle">
-        <div class="small-title">TẠO YÊU CẦU CHỨNG CHỈ TRÊN SAFARI</div>
-        <h2 id="csrTitle">Tạo khóa riêng + CSR mới</h2>
-        <p>Website tạo khóa RSA 2048-bit và yêu cầu CSR <strong>ngay trên iPhone</strong>, không tải khóa riêng lên ERI. ZIP sẽ chứa CSR và khóa riêng chưa mã hóa. Đây <strong>không phải</strong> chứng chỉ <code>cert.p12</code> hoặc <code>cert.mobileprovision</code> dùng ký IPA.</p>
-        <div class="csr-fields">
-          <label>Tên yêu cầu (Common Name)<input id="csrCommonName" type="text" maxlength="100" value="ERI iPhone Certificate" autocomplete="off"></label>
-          <label>Email (không bắt buộc)<input id="csrEmail" type="email" maxlength="150" placeholder="example@email.com" autocomplete="off"></label>
-        </div>
-        <label class="csr-ack"><input id="csrSafetyAck" type="checkbox"> Tôi hiểu tệp khóa riêng trong ZIP chưa mã hóa, phải được giữ bí mật và không được chia sẻ.</label>
-        <div class="csr-actions">
-          <button type="button" id="generateCsrBtn" class="primary">Tạo CSR + khóa riêng (ZIP)</button>
-          <a class="secondary" href="https://developer.apple.com/account/" target="_blank" rel="noopener noreferrer">Trang Apple Developer ↗</a>
-        </div>
-        <div id="csrStatus" class="csr-status" aria-live="polite"></div>
-        <p class="csr-clarify">Muốn có bộ P12 + mobileprovision dùng để ký thật, bạn phải có chứng chỉ <code>.cer</code> và provisioning profile do Apple cấp qua tài khoản phù hợp, rồi ghép <code>.cer</code> với đúng khóa riêng để xuất P12. Website không tự cấp quyền phân phối doanh nghiệp của Apple.</p>
-      </section>
-      <section class="source-library" aria-labelledby="sourcesTitle">
-        <div class="source-library-heading">
+      <section class="listing" aria-labelledby="listTitle">
+        <div class="listing-head">
           <div>
-            <div class="small-title">TỔNG HỢP TỪ NHIỀU NGUỒN</div>
-            <h2 id="sourcesTitle">Nguồn chứng chỉ được theo dõi <span id="sourceCount" class="pill-number">—</span></h2>
+            <h2 id="listTitle">Chứng chỉ còn hiệu lực</h2>
+            <p id="listDescription">Nguồn báo SIGNED, chưa hết hạn, thuộc danh sách có P12.</p>
           </div>
-          <div class="source-hint">Nguồn không có API hoặc chỉ cung cấp ZIP sẽ được đánh dấu tham khảo, không tự chuyển thành SIGNED.</div>
+          <button type="button" id="refreshBtn" class="refresh">↻ Cập nhật</button>
         </div>
-        <div class="source-grid" id="sourceList" aria-live="polite"></div>
+
+        <div id="message" class="message" role="status" aria-live="polite">Đang tải danh sách...</div>
+        <div id="certList" class="cert-list"></div>
+        <div class="updated" id="updatedAt">Chưa có thời gian cập nhật</div>
       </section>
-      <section class="explain"><div class="info-icon">i</div><div><h3>Lưu ý trước khi dùng</h3><p>Website chỉ hiện chứng chỉ được NexSideloading báo SIGNED, có danh mục P12 và thời hạn hợp lệ. <strong>Chưa xác minh trực tiếp với Apple và chưa kiểm tra việc cài hoặc ký IPA thực tế.</strong> Nếu dữ liệu quá cũ, danh sách sẽ tạm ẩn toàn bộ để tránh báo sai. Chứng chỉ có thể bị thu hồi bất cứ lúc nào. Chứng chỉ Enterprise được Apple cấp cho tổ chức để phân phối ứng dụng nội bộ; hãy chỉ sử dụng khi có quyền hợp lệ. Tránh đưa chứng chỉ riêng và mật khẩu cá nhân lên trang không tin cậy.</p></div></section>
+
+      <p class="note">Trạng thái do nguồn công khai cung cấp, không phải xác minh trực tiếp từ Apple. ZIP bị thu hồi chỉ dùng để lưu trữ, không sửa được lỗi “không thể xác minh tính toàn vẹn” khi cài ứng dụng.</p>
     </main>
-    <footer><span><b>Mod By Eri Nguyễn</b> · ERI CERT CHECK</span><span>Nguồn: <a href="https://sideloading.net/api/" target="_blank" rel="noopener noreferrer">NexSideloading API</a></span></footer>
+
+    <footer><strong>Mod By Eri Nguyễn</strong><span>© ERI CERT CHECK</span></footer>
   </div>
-  <template id="certTemplate"><article class="cert"><div class="cert-header"><span class="cert-type">◈ ENTERPRISE</span><span class="status"></span></div><h3 class="cert-name"></h3><div class="dates"><div><span>Ngày cấp</span><strong class="from"></strong></div><div><span>Hạn sử dụng</span><strong class="to"></strong></div></div><div class="cert-footer"><span class="p12-status"></span><div class="links"></div></div></article></template>
 </body>
 </html>

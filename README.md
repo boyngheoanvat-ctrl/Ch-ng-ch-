@@ -21,3 +21,9 @@ Chạy cập nhật thủ công: vào **Actions → ERI Cert Check · Update Ren
 ## Lưu ý
 
 Các trạng thái do bên thứ ba cung cấp, **không phải xác minh trực tiếp từ Apple**; nhãn Signed không bảo đảm hoạt động trên mọi iPhone hoặc không bị thu hồi sau đó. Chỉ sử dụng các chứng chỉ khi có quyền hợp lệ. Website không yêu cầu tải chứng chỉ cá nhân của người dùng lên.
+
+## Bộ lọc hiện tại (Safari)
+
+Trang chỉ liệt kê chứng chỉ theo nguồn NexSideloading báo `SIGNED`, có ngày bắt đầu trước thời điểm hiện tại, chưa hết hạn, có danh mục P12 và mobileprovision. Các mục thiếu P12, revoked, expired hoặc thiếu ngày hợp lệ đều bị ẩn. Trình duyệt kiểm tra lại thời hạn và **ẩn danh sách nếu dữ liệu cũ hơn 3 giờ**, tránh coi dữ liệu cũ là hiện tại.
+
+Danh sách chỉ dựa trên dữ liệu công khai, **không xác minh trực tiếp với Apple, không xác minh file P12 tải về và không cam kết cài IPA thành công**. Nút tải P12/ZIP trỏ về nguồn công khai.

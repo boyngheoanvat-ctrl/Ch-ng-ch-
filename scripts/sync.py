@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fetch public NexCerts entries for a static GitHub Pages site. No secrets."""
+"""Only publish source-reported SIGNED ESign certificates with P12 and a current validity window."""
 import json
 import os
 import re
@@ -18,13 +18,16 @@ def get_list(name):
     error = None
     for attempt in range(3):
         try:
-            req = Request(API + name, headers={'User-Agent': 'ERI-Cert-Check/1.1', 'Accept':'application/json'})
-            with urlopen(req, timeout=18) as response:
+            request = Request(API + name, headers={
+                'User-Agent': 'ERI-Cert-Check/1.2',
+                'Accept': 'application/json'
+            })
+            with urlopen(request, timeout=18) as response:
                 data = json.load(response)
             if isinstance(data, dict):
                 data = data.get('certificates', data.get('data'))
             if not isinstance(data, list):
-                raise ValueError('Unexpected API format')
+                raise ValueError('Unexpected API format for ' + name)
             return data
         except Exception as exc:
             error = exc
@@ -32,80 +35,100 @@ def get_list(name):
     raise RuntimeError(f'Cannot fetch {name}: {error}')
 
 
-def as_iso(value):
+def as_datetime(value):
     if not isinstance(value, str) or not value.strip():
         return None
     try:
-        return parsedate_to_datetime(value).astimezone(timezone.utc).isoformat().replace('+00:00', 'Z')
+        result = parsedate_to_datetime(value)
     except (TypeError, ValueError, IndexError, OverflowError):
         try:
-            return datetime.fromisoformat(value.replace('Z', '+00:00')).astimezone(timezone.utc).isoformat().replace('+00:00', 'Z')
+            result = datetime.fromisoformat(value.replace('Z', '+00:00'))
         except ValueError:
             return None
+    if result.tzinfo is None:
+        result = result.replace(tzinfo=timezone.utc)
+    return result.astimezone(timezone.utc)
 
 
-def normalize(item, collection, now):
+def normalize(item, now):
     if not isinstance(item, dict):
         return None
     try:
         ident = int(item['id'])
-        if ident < 1 or ident > 1_000_000_000:
+        if not (1 <= ident <= 1_000_000_000):
             return None
     except (KeyError, ValueError, TypeError):
         return None
+
     raw = str(item.get('status', '')).strip()
-    if re.search(r'revoked|❌', raw, re.I):
-        status = 'revoked'
-    elif re.search(r'expired', raw, re.I):
-        status = 'expired'
-    elif re.search(r'signed|active|✅', raw, re.I):
-        status = 'signed'
-    else:
-        status = 'unknown'
-    start = as_iso(item.get('valid_from', item.get('validFrom')))
-    end = as_iso(item.get('valid_to', item.get('validTo')))
-    if end and datetime.fromisoformat(end.replace('Z','+00:00')) < now:
-        status = 'expired'
-    name = str(item.get('name') or item.get('nickname') or 'Không rõ tên')[:240]
-    missing = collection == 'missingP12'
+    if not re.search(r'\b(signed|active)\b|✅', raw, re.I) or re.search(r'revoked|expired|❌', raw, re.I):
+        return None
+
+    valid_from = as_datetime(item.get('valid_from', item.get('validFrom')))
+    valid_to = as_datetime(item.get('valid_to', item.get('validTo')))
+    # Unknown dates are not enough to claim the certificate is usable now.
+    if valid_from is None or valid_to is None or not (valid_from <= now < valid_to):
+        return None
+
+    # Do not treat an explicit missing-P12 marker as a complete signing bundle.
+    if item.get('has_p12') is False or item.get('hasP12') is False:
+        return None
+
+    name = str(item.get('name') or item.get('nickname') or 'Không rõ tên').strip()[:240]
     url = 'https://sideloading.net/api/certificates/download/'
-    links = {'profile': f'{url}missingP12/{ident}/cert.mobileprovision'} if missing else {
-        'zip': f'{url}{ident}/cert.zip',
-        'p12': f'{url}{ident}/cert.p12',
-        'profile': f'{url}{ident}/cert.mobileprovision',
-        'password': f'{url}{ident}/password.txt'
+    return {
+        'id': ident, 'key': f'all-{ident}', 'name': name,
+        'nickname': str(item.get('nickname') or '')[:120],
+        'status': 'signed',
+        'validFrom': valid_from.isoformat().replace('+00:00', 'Z'),
+        'validTo': valid_to.isoformat().replace('+00:00', 'Z'),
+        'hasP12': True,
+        'links': {
+            'zip': f'{url}{ident}/cert.zip',
+            'p12': f'{url}{ident}/cert.p12',
+            'profile': f'{url}{ident}/cert.mobileprovision',
+            'password': f'{url}{ident}/password.txt'
+        }
     }
-    return {'id':ident, 'key': f'{collection}-{ident}', 'name':name,
-            'nickname':str(item.get('nickname') or '')[:120], 'status':status,
-            'validFrom':start, 'validTo':end, 'hasP12':not missing,
-            'links':links}
 
 
 def main():
     now = datetime.now(timezone.utc)
     all_data = get_list('all')
-    warnings = []
-    try:
-        missing_data = get_list('missingP12')
-    except Exception as exc:
-        missing_data = []
-        warnings.append('Chưa tải được danh sách chứng chỉ thiếu P12.')
-        print('Warning:', exc)
-    primary = [x for obj in all_data if (x:=normalize(obj,'all',now))]
-    no_p12 = [x for obj in missing_data if (x:=normalize(obj,'missingP12',now))]
-    names = {x['name'].casefold().strip() for x in primary}
-    certs = primary + [x for x in no_p12 if x['name'].casefold().strip() not in names]
-    certs.sort(key=lambda x: (x['status']=='signed', x['validFrom'] or ''), reverse=True)
-    payload = {'source':'NexSideloading NexCerts', 'sourceUrl':'https://sideloading.net/api/',
-               'fetchedAt':now.isoformat().replace('+00:00','Z'),
-               'sourceUpdateNote':'Dữ liệu nguồn đồng bộ khoảng 30 phút/lần',
-               'verificationNote':'Theo dữ liệu bên thứ ba, không xác minh trực tiếp với Apple',
-               'warnings':warnings, 'certificates':certs}
+    # Fail closed if the missing-P12 list cannot be checked.
+    missing_data = get_list('missingP12')
+    missing_ids = set()
+    missing_names = set()
+    for item in missing_data:
+        if not isinstance(item, dict):
+            continue
+        try:
+            missing_ids.add(int(item.get('id')))
+        except (ValueError, TypeError):
+            pass
+        name = str(item.get('name') or item.get('nickname') or '').strip().casefold()
+        if name:
+            missing_names.add(name)
+
+    candidates = [cert for item in all_data if (cert := normalize(item, now))]
+    certs = [
+        cert for cert in candidates
+        if cert['id'] not in missing_ids and cert['name'].casefold() not in missing_names
+    ]
+    certs.sort(key=lambda cert: cert['validFrom'], reverse=True)
+    payload = {
+        'source': 'NexSideloading NexCerts',
+        'sourceUrl': 'https://sideloading.net/api/',
+        'fetchedAt': now.isoformat().replace('+00:00', 'Z'),
+        'sourceUpdateNote': 'Dữ liệu nguồn công khai được đồng bộ định kỳ',
+        'verificationNote': 'Chỉ lọc SIGNED, còn hạn và có danh mục P12 theo bên thứ ba; không xác minh trực tiếp với Apple hoặc kiểm thử cài IPA.',
+        'certificates': certs
+    }
     OUT.parent.mkdir(parents=True, exist_ok=True)
     temp = OUT.with_suffix('.tmp')
-    temp.write_text(json.dumps(payload,ensure_ascii=False,separators=(',',':')),encoding='utf-8')
-    os.replace(temp,OUT)
-    print(f'Wrote {len(certs)} certificates to {OUT}')
+    temp.write_text(json.dumps(payload, ensure_ascii=False, separators=(',', ':')), encoding='utf-8')
+    os.replace(temp, OUT)
+    print(f'Eligible: {len(certs)} of {len(all_data)} from primary source')
 
 
 if __name__ == '__main__':

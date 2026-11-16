@@ -1,6 +1,6 @@
 'use strict';
 const $ = selector => document.querySelector(selector);
-const state = {items: [], query: '', sort: 'newest', loading: false, summary: null, sources: []};
+const state = {items: [], query: '', sort: 'newest', loading: false, summary: null, sources: [], packages: [], packageQuery: ''};
 const MAX_DATA_AGE_MS = 3 * 60 * 60 * 1000;
 const numeric = value => new Intl.NumberFormat('vi-VN').format(value);
 const timestamp = value => value && Number.isFinite(Date.parse(value)) ? Date.parse(value) : 0;
@@ -57,6 +57,68 @@ function card(cert) {
     if (link) element.querySelector('.links').append(link);
   });
   return element;
+}
+
+function renderPackages() {
+  const parent = $('#packageList');
+  const empty = $('#packageEmpty');
+  const items = Array.isArray(state.packages) ? state.packages : [];
+  const term = state.packageQuery.trim().toLocaleLowerCase('vi');
+  const visible = items.filter(item =>
+    !term || (String(item.name || '') + ' ' + String(item.source || '')).toLocaleLowerCase('vi').includes(term));
+  $('#packageCount').textContent = numeric(visible.length);
+  const fragment = document.createDocumentFragment();
+  const allowed = new Set(['www.signhub.pro', 'github.com']);
+  for (const item of visible) {
+    if (!item || item.status !== 'unverified' || typeof item.name !== 'string') continue;
+    let url, landing;
+    try {
+      url = new URL(item.downloadUrl);
+      landing = new URL(item.sourceUrl);
+    } catch (_) { continue; }
+    if (url.protocol !== 'https:' || !allowed.has(url.hostname) ||
+        landing.protocol !== 'https:' || !allowed.has(landing.hostname) ||
+        !url.pathname.toLowerCase().endsWith('.zip')) continue;
+    const card = document.createElement('article');
+    card.className = 'package-card';
+    const heading = document.createElement('div');
+    heading.className = 'package-heading';
+    const name = document.createElement('strong');
+    name.textContent = item.name.slice(0, 180);
+    const badge = document.createElement('span');
+    badge.className = 'source-tag manual';
+    badge.textContent = 'CHƯA XÁC MINH';
+    heading.append(name, badge);
+    const source = document.createElement('p');
+    source.className = 'package-source';
+    source.textContent = 'Nguồn: ' + String(item.source || 'Không rõ');
+    const desc = document.createElement('p');
+    desc.textContent = String(item.note || 'Chưa rõ nội dung và tình trạng chứng chỉ.').slice(0, 400);
+    const actions = document.createElement('div');
+    actions.className = 'package-actions';
+    const download = document.createElement('a');
+    download.className = 'dl-link primary-link';
+    download.href = url.href;
+    download.target = '_blank';
+    download.rel = 'noopener noreferrer';
+    download.textContent = '↓ Tải ZIP để kiểm tra';
+    const view = document.createElement('a');
+    view.className = 'dl-link';
+    view.href = landing.href;
+    view.target = '_blank';
+    view.rel = 'noopener noreferrer';
+    view.textContent = 'Xem nguồn ↗';
+    actions.append(download, view);
+    card.append(heading, source, desc, actions);
+    fragment.append(card);
+  }
+  parent.replaceChildren(fragment);
+  empty.hidden = parent.childElementCount > 0;
+  if (!empty.hidden) {
+    empty.textContent = items.length ?
+      'Không tìm thấy gói ZIP phù hợp với từ khóa. Thử tìm theo tên nguồn ở phần bên dưới.' :
+      'Chưa thu thập được gói ZIP công khai nào. Danh sách chứng chỉ dùng được vẫn được kiểm tra riêng bên dưới.';
+  }
 }
 
 function renderSources() {
@@ -178,6 +240,8 @@ async function reload() {
     state.summary = payload.summary && typeof payload.summary === 'object' ? payload.summary : null;
     state.sources = Array.isArray(payload.sources) ? payload.sources : [];
     renderSources();
+    state.packages = Array.isArray(payload.packages) ? payload.packages : [];
+    renderPackages();
     state.items = payload.certificates.filter(cert => isEligible(cert, now));
     $('#checkedAt').textContent = 'Dữ liệu lúc ' +
       new Intl.DateTimeFormat('vi-VN', {dateStyle:'short', timeStyle:'short', timeZone:'Asia/Ho_Chi_Minh'}).format(new Date(fetchedAt)) + ' (GMT+7)';
@@ -189,6 +253,8 @@ async function reload() {
     state.summary = null;
     state.sources = [];
     renderSources();
+    state.packages = [];
+    renderPackages();
     $('#checkedAt').textContent = 'Chưa có dữ liệu tin cậy';
     $('#sourceInfo').textContent = 'Không có dữ liệu đủ mới để đánh giá tình trạng chứng chỉ.';
     state.loading = false;
@@ -201,6 +267,7 @@ async function reload() {
 
 $('#refreshBtn').addEventListener('click', reload);
 $('#search').addEventListener('input', event => { state.query = event.target.value; render(); });
+$('#packageSearch').addEventListener('input', event => { state.packageQuery = event.target.value; renderPackages(); });
 $('#sort').addEventListener('change', event => { state.sort = event.target.value; render(); });
 reload();
 setInterval(() => { if (!document.hidden) reload(); }, 5 * 60 * 1000);

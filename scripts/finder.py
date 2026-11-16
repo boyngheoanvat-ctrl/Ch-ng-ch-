@@ -34,13 +34,12 @@ def parse_time(value):
     if not isinstance(value, str) or not value.strip():
         return None
     try:
-        return datetime.fromisoformat(value.strip().replace("Z", "+00:00")).replace(
-            tzinfo=timezone.utc
-        ) if datetime.fromisoformat(value.strip().replace("Z", "+00:00")).tzinfo is None else datetime.fromisoformat(
-            value.strip().replace("Z", "+00:00")
-        ).astimezone(timezone.utc)
+        date = datetime.fromisoformat(value.strip().replace("Z", "+00:00"))
     except (ValueError, OverflowError):
         return None
+    if date.tzinfo is None:
+        date = date.replace(tzinfo=timezone.utc)
+    return date.astimezone(timezone.utc)
 
 
 def candidate(name, source, url, landing_page, now):

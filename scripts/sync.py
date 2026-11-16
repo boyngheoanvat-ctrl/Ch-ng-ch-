@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 from pathlib import Path
 from urllib.request import Request, urlopen
+from source_catalog import collect_sources
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / 'site' / 'data' / 'certs.json'
@@ -131,6 +132,17 @@ def main():
             or (end := as_datetime(item.get('valid_to', item.get('validTo')))) is not None and end <= now
         )
     )
+    additional_sources = collect_sources()
+    sources = [{
+        'name': 'NexSideloading',
+        'url': 'https://sideloading.net/certificates/',
+        'kind': 'public_api',
+        'status': 'checked',
+        'count': len(all_data) + len(missing_data),
+        'signed': len(certs),
+        'note': 'API Signed/Revoked và danh sách thiếu P12; chỉ nguồn đủ trường trạng thái + thời hạn + liên kết tệp mới có thể vào danh sách ký.',
+        'checkedAt': now.isoformat().replace('+00:00','Z')
+    }] + additional_sources
     payload = {
         'source': 'NexSideloading NexCerts',
         'sourceUrl': 'https://sideloading.net/api/',
@@ -143,13 +155,16 @@ def main():
             'signedMissingP12': signed_missing_p12,
             'eligible': len(certs)
         },
+        'sources': sources,
         'certificates': certs
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)
     temp = OUT.with_suffix('.tmp')
     temp.write_text(json.dumps(payload, ensure_ascii=False, separators=(',', ':')), encoding='utf-8')
     os.replace(temp, OUT)
-    print(f'Eligible: {len(certs)} of {len(all_data)} from primary source')
+    print(f'Eligible: {len(certs)} of {len(all_data)} from NexSideloading')
+    print('Source status:', ', '.join(s['name'] + '=' + s['status'] for s in sources))
+
 
 
 if __name__ == '__main__':
